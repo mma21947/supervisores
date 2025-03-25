@@ -1,0 +1,40 @@
+{% extends 'usuarios/base.html' %}
+
+{% block title %}Confirmar Exclusão de Falta{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3>Confirmar Exclusão de Falta</h3>
+    </div>
+    <div class="card-body">
+        <p class="mb-4">Você tem certeza que deseja excluir a seguinte falta?</p>
+        
+        <div class="mb-4">
+            <h5>Detalhes da Falta:</h5>
+            <ul class="list-unstyled">
+                <li><strong>Funcionário:</strong> {{ funcionario.nome_funcionario }}</li>
+                <li><strong>Período:</strong> 
+                    {% if falta.data_inicio == falta.data_fim %}
+                        {{ falta.data_inicio|date:"d/m/Y" }}
+                    {% else %}
+                        {{ falta.data_inicio|date:"d/m/Y" }} até {{ falta.data_fim|date:"d/m/Y" }}
+                    {% endif %}
+                </li>
+                <li><strong>Tipo:</strong> {{ falta.get_tipo_display }}</li>
+                {% if falta.justificativa %}
+                    <li><strong>Justificativa:</strong> {{ falta.justificativa }}</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-end">
+                <a href="{% url 'lista_faltas' funcionario.id %}" class="btn btn-secondary me-2">Cancelar</a>
+                <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,35 @@
+{% extends 'usuarios/base.html' %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Confirmar Exclusão</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-center">
+                    Tem certeza que deseja excluir o usuário <strong>{{ usuario.nome_completo }}</strong>?
+                </p>
+                <p class="text-center text-muted">
+                    CPF: {{ usuario.cpf }}
+                </p>
+                {% if usuario.is_superuser %}
+                    <div class="alert alert-warning">
+                        <strong>Atenção!</strong> Este usuário é um administrador.
+                    </div>
+                {% endif %}
+                <form method="post" class="text-center">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                        <a href="{% url 'lista_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

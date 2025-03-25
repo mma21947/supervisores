@@ -1,0 +1,97 @@
+{% extends 'usuarios/base.html' %}
+
+{% block title %}Lista de Funcionários{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3>Funcionários de {{ usuario.nome_completo }}</h3>
+        {% if user.is_superuser %}
+            <a href="{% url 'adicionar_funcionario' usuario.id %}" class="btn btn-primary">
+                <i class="bi bi-person-plus"></i> Adicionar Funcionário
+            </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if funcionarios %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome do Funcionário</th>
+                            <th>Empresa</th>
+                            <th>Departamento</th>
+                            <th>Setor</th>
+                            <th>Função</th>
+                            <th>Status</th>
+                            <th>Data de Cadastro</th>
+                            <th>Total de Faltas</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for funcionario in funcionarios %}
+                            <tr>
+                                <td>{{ funcionario.nome_funcionario }}</td>
+                                <td>{{ funcionario.nome_empresa }}</td>
+                                <td>{{ funcionario.departamento }}</td>
+                                <td>{{ funcionario.setor }}</td>
+                                <td>{{ funcionario.funcao }}</td>
+                                <td>
+                                    {% if funcionario.ativo %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ funcionario.data_criacao|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <div class="d-flex flex-column align-items-start">
+                                        <span class="badge bg-secondary mb-1">Total: {{ funcionario.total_faltas }} dia{{ funcionario.total_faltas|pluralize }}</span>
+                                        <small>
+                                            <span class="badge bg-warning me-1">Justificadas: {{ funcionario.faltas_justificadas }} dia{{ funcionario.faltas_justificadas|pluralize }}</span>
+                                            <span class="badge bg-danger me-1">Não Justificadas: {{ funcionario.faltas_nao_justificadas }} dia{{ funcionario.faltas_nao_justificadas|pluralize }}</span>
+                                            <span class="badge bg-info">Licenças: {{ funcionario.licencas }} dia{{ funcionario.licencas|pluralize }}</span>
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'lista_faltas' funcionario.id %}" class="btn btn-info btn-sm" title="Ver Faltas">
+                                            <i class="bi bi-calendar3"></i>
+                                            Faltas
+                                        </a>
+                                        <a href="{% url 'registrar_falta' funcionario.id %}" class="btn btn-success btn-sm" title="Registrar Falta">
+                                            <i class="bi bi-calendar-plus"></i>
+                                            Registrar Falta
+                                        </a>
+                                        {% if user.is_superuser %}
+                                            <a href="{% url 'editar_funcionario' funcionario.id %}" class="btn btn-warning btn-sm" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                                Editar
+                                            </a>
+                                            <a href="{% url 'excluir_funcionario' funcionario.id %}" class="btn btn-danger btn-sm" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                                Excluir
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center">Nenhum funcionário cadastrado.</p>
+            {% if user.is_superuser %}
+                <div class="text-center">
+                    <a href="{% url 'adicionar_funcionario' usuario.id %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Adicionar Primeiro Funcionário
+                    </a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

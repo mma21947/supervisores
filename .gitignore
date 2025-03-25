@@ -1,0 +1,47 @@
+# Ambiente virtual
+venv/
+env/
+ENV/
+
+# Arquivos de banco de dados
+*.sqlite3
+*.db
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Arquivos de log
+*.log
+
+# Arquivos de mídia e uploads de usuários
+media/
+
+# Arquivos estáticos coletados
+static_root/
+staticfiles/
+
+# Arquivos de configuração local
+local_settings.py
+
+# Arquivos do ambiente IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Arquivos de ambiente
+.env
+.env.local
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Coverage e testes
+.coverage
+htmlcov/
+.pytest_cache/ 

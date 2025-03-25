@@ -1,0 +1,93 @@
+{% extends 'usuarios/base.html' %}
+
+{% block title %}Faltas - {{ funcionario.nome_funcionario }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3>Faltas de {{ funcionario.nome_funcionario }}</h3>
+        <a href="{% url 'registrar_falta' funcionario.id %}" class="btn btn-primary">
+            <i class="bi bi-calendar-plus"></i> Registrar Falta
+        </a>
+    </div>
+    <div class="card-body">
+        {% if faltas %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Período</th>
+                            <th>Tipo</th>
+                            <th>Justificativa</th>
+                            <th>Atestado</th>
+                            <th>Registrado por</th>
+                            <th>Data do Registro</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for falta in faltas %}
+                            <tr>
+                                <td>
+                                    {% if falta.data_inicio == falta.data_fim %}
+                                        {{ falta.data_inicio|date:"d/m/Y" }}
+                                    {% else %}
+                                        {{ falta.data_inicio|date:"d/m/Y" }} até {{ falta.data_fim|date:"d/m/Y" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if falta.tipo == 'JUS' %}
+                                        <span class="badge bg-warning">Justificada</span>
+                                    {% elif falta.tipo == 'NAO' %}
+                                        <span class="badge bg-danger">Não Justificada</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Licença</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ falta.justificativa|default:"-" }}</td>
+                                <td>
+                                    {% if falta.atestado %}
+                                        <div class="btn-group">
+                                            <a href="{{ falta.atestado.url }}" class="btn btn-sm btn-info" target="_blank" title="Visualizar Atestado">
+                                                <i class="bi bi-eye"></i>
+                                                Visualizar
+                                            </a>
+                                            <a href="{{ falta.atestado.url }}" class="btn btn-sm btn-secondary" download title="Baixar Atestado">
+                                                <i class="bi bi-download"></i>
+                                                Baixar
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ falta.registrado_por.nome_completo }}</td>
+                                <td>{{ falta.data_registro|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'editar_falta' falta.id %}" class="btn btn-warning btn-sm" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                            Editar
+                                        </a>
+                                        <a href="{% url 'excluir_falta' falta.id %}" class="btn btn-danger btn-sm" title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                            Excluir
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center">Nenhuma falta registrada.</p>
+            <div class="text-center">
+                <a href="{% url 'registrar_falta' funcionario.id %}" class="btn btn-primary">
+                    <i class="bi bi-calendar-plus"></i> Registrar Primeira Falta
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

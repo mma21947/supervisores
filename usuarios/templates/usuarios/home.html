@@ -1,0 +1,254 @@
+{% extends 'usuarios/base.html' %}
+
+{% block title %}Página Inicial{% endblock %}
+
+{% block content %}
+{% if is_superuser %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">Top 5 - Total de Faltas</h4>
+                    <small class="text-white-50">(Excluindo Licenças)</small>
+                </div>
+                <div class="card-body">
+                    {% if top_faltas %}
+                        <div class="list-group">
+                            {% for item in top_faltas %}
+                                <a href="{% url 'lista_faltas' item.funcionario.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ item.funcionario.nome_funcionario }}</h6>
+                                            <small class="text-muted">{{ item.funcionario.nome_empresa }}</small>
+                                            <br>
+                                            <small class="text-muted">
+                                                ({{ item.faltas_justificadas }} justificada{{ item.faltas_justificadas|pluralize }} + 
+                                                {{ item.faltas_nao_justificadas }} não justificada{{ item.faltas_nao_justificadas|pluralize }})
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-secondary">{{ item.total_faltas }} dia{{ item.total_faltas|pluralize }}</span>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted mt-3">Nenhuma falta registrada</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Top 5 - Faltas Não Justificadas</h4>
+                </div>
+                <div class="card-body">
+                    {% if top_nao_justificadas %}
+                        <div class="list-group">
+                            {% for item in top_nao_justificadas %}
+                                <a href="{% url 'lista_faltas' item.funcionario.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ item.funcionario.nome_funcionario }}</h6>
+                                            <small class="text-muted">{{ item.funcionario.nome_empresa }}</small>
+                                        </div>
+                                        <span class="badge bg-danger">{{ item.faltas_nao_justificadas }} dia{{ item.faltas_nao_justificadas|pluralize }}</span>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted mt-3">Nenhuma falta não justificada</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0">Top 5 - Faltas Justificadas</h4>
+                </div>
+                <div class="card-body">
+                    {% if top_justificadas %}
+                        <div class="list-group">
+                            {% for item in top_justificadas %}
+                                <a href="{% url 'lista_faltas' item.funcionario.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ item.funcionario.nome_funcionario }}</h6>
+                                            <small class="text-muted">{{ item.funcionario.nome_empresa }}</small>
+                                        </div>
+                                        <span class="badge bg-warning">{{ item.faltas_justificadas }} dia{{ item.faltas_justificadas|pluralize }}</span>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted mt-3">Nenhuma falta justificada</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Top 5 - Licenças</h4>
+                </div>
+                <div class="card-body">
+                    {% if top_licencas %}
+                        <div class="list-group">
+                            {% for item in top_licencas %}
+                                <a href="{% url 'lista_faltas' item.funcionario.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ item.funcionario.nome_funcionario }}</h6>
+                                            <small class="text-muted">{{ item.funcionario.nome_empresa }}</small>
+                                        </div>
+                                        <span class="badge bg-info">{{ item.licencas }} dia{{ item.licencas|pluralize }}</span>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted mt-3">Nenhuma licença registrada</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Top 5 - Funcionários Mais Antigos</h4>
+                </div>
+                <div class="card-body">
+                    {% if top_antigos %}
+                        <div class="list-group">
+                            {% for item in top_antigos %}
+                                <a href="{% url 'lista_faltas' item.funcionario.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ item.funcionario.nome_funcionario }}</h6>
+                                            <small class="text-muted">{{ item.funcionario.nome_empresa }}</small>
+                                            <br>
+                                            <small class="text-muted">
+                                                Admissão: {{ item.data_admissao|date:"d/m/Y" }}
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-primary">{{ item.tempo_servico }}</span>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted mt-3">Nenhum funcionário registrado</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .list-group-item {
+            transition: all 0.2s ease;
+        }
+        .list-group-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1;
+        }
+        .card {
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+{% else %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Meus Funcionários</h3>
+            {% if user.is_superuser %}
+                <a href="{% url 'adicionar_funcionario' user.id %}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Adicionar Funcionário
+                </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if funcionarios %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nome do Funcionário</th>
+                                <th>Empresa</th>
+                                <th>Departamento</th>
+                                <th>Setor</th>
+                                <th>Função</th>
+                                <th>Status</th>
+                                <th>Data de Cadastro</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for funcionario in funcionarios %}
+                                <tr>
+                                    <td>{{ funcionario.nome_funcionario }}</td>
+                                    <td>{{ funcionario.nome_empresa }}</td>
+                                    <td>{{ funcionario.departamento }}</td>
+                                    <td>{{ funcionario.setor }}</td>
+                                    <td>{{ funcionario.funcao }}</td>
+                                    <td>
+                                        {% if funcionario.ativo %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ funcionario.data_criacao|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'lista_faltas' funcionario.id %}" class="btn btn-info btn-sm" title="Ver Faltas">
+                                                <i class="bi bi-calendar3"></i>
+                                                Faltas
+                                            </a>
+                                            <a href="{% url 'registrar_falta' funcionario.id %}" class="btn btn-success btn-sm" title="Registrar Falta">
+                                                <i class="bi bi-calendar-plus"></i>
+                                                Registrar Falta
+                                            </a>
+                                            {% if user.is_superuser %}
+                                                <a href="{% url 'editar_funcionario' funcionario.id %}" class="btn btn-warning btn-sm" title="Editar">
+                                                    <i class="bi bi-pencil"></i>
+                                                    Editar
+                                                </a>
+                                                <a href="{% url 'excluir_funcionario' funcionario.id %}" class="btn btn-danger btn-sm" title="Excluir">
+                                                    <i class="bi bi-trash"></i>
+                                                    Excluir
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center">Você ainda não tem funcionários cadastrados.</p>
+                {% if user.is_superuser %}
+                    <div class="text-center">
+                        <a href="{% url 'adicionar_funcionario' user.id %}" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Adicionar Primeiro Funcionário
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %} 
