@@ -11,6 +11,10 @@ class UsuarioManager(BaseUserManager):
         if not nome_completo:
             raise ValueError('O nome completo deve ser fornecido')
 
+        # Gerar username automaticamente se não fornecido
+        if 'username' not in extra_fields or not extra_fields['username']:
+            extra_fields['username'] = f"user_{cpf}"
+
         user = self.model(
             cpf=cpf,
             nome_completo=nome_completo,
@@ -23,6 +27,11 @@ class UsuarioManager(BaseUserManager):
     def create_superuser(self, cpf, nome_completo, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        
+        # Gerar username automaticamente para superuser
+        if 'username' not in extra_fields or not extra_fields['username']:
+            extra_fields['username'] = f"admin_{cpf}"
+            
         return self.create_user(cpf, nome_completo, password, **extra_fields)
 
 class Usuario(AbstractUser):
@@ -40,6 +49,8 @@ class Usuario(AbstractUser):
     
     USERNAME_FIELD = 'cpf'
     REQUIRED_FIELDS = ['nome_completo']
+    
+    objects = UsuarioManager()
 
     def __str__(self):
         return self.nome_completo
