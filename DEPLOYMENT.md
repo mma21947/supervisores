@@ -1,15 +1,6 @@
 # Guia de Implantação em Servidor Ubuntu
 
-Este guia fornece instruções passo a passo para configurar o Sistema de Gestão de Faltas e Licenças em um servidor Ubuntu com Nginx, Gunicorn e PostgreSQL.
-
-## Requisitos do Servidor
-
-- Ubuntu 20.04 LTS ou superior
-- Python 3.8+
-- PostgreSQL 12+
-- Nginx
-- Gunicorn
-- Supervisor (para gerenciamento de processos)
+Este guia fornece instruções passo a passo para configurar o Sistema de Gestão de Faltas e Licenças em um servidor Ubuntu com IP 192.168.8.193, usando PostgreSQL e Gunicorn.
 
 ## 1. Configuração Inicial do Servidor
 
@@ -23,14 +14,26 @@ sudo apt upgrade -y
 ### Instalar Dependências
 
 ```bash
-sudo apt install -y python3-pip python3-dev libpq-dev postgresql postgresql-contrib nginx supervisor git
-sudo pip3 install virtualenv
+sudo apt install -y python3-pip python3-dev libpq-dev git nginx
 ```
 
-## 2. Configuração do PostgreSQL
+## 2. Instalação e Configuração do PostgreSQL
 
-### Criar Banco de Dados e Usuário
+### Instalar PostgreSQL
 
+```bash
+sudo apt install -y postgresql postgresql-contrib
+```
+
+### Verificar Status do PostgreSQL
+
+```bash
+sudo systemctl status postgresql
+```
+
+### Configurar PostgreSQL
+
+Acesse o shell do PostgreSQL:
 ```bash
 sudo -u postgres psql
 ```
@@ -38,12 +41,24 @@ sudo -u postgres psql
 No shell do PostgreSQL:
 ```sql
 CREATE DATABASE sistema_faltas;
-CREATE USER sistema_faltas_user WITH PASSWORD 'senha_segura';
-ALTER ROLE sistema_faltas_user SET client_encoding TO 'utf8';
-ALTER ROLE sistema_faltas_user SET default_transaction_isolation TO 'read committed';
-ALTER ROLE sistema_faltas_user SET timezone TO 'America/Sao_Paulo';
-GRANT ALL PRIVILEGES ON DATABASE sistema_faltas TO sistema_faltas_user;
+ALTER USER postgres PASSWORD 'postgres';
 \q
+```
+
+### Editar Configuração de Autenticação do PostgreSQL
+
+```bash
+sudo nano /etc/postgresql/[versao]/main/pg_hba.conf
+```
+
+Localize a linha que contém `local all postgres` e altere o método de autenticação para `md5`:
+```
+local   all             postgres                                md5
+```
+
+Reinicie o PostgreSQL:
+```bash
+sudo systemctl restart postgresql
 ```
 
 ## 3. Configuração do Projeto
@@ -52,18 +67,20 @@ GRANT ALL PRIVILEGES ON DATABASE sistema_faltas TO sistema_faltas_user;
 
 ```bash
 cd /var/www/
-sudo git clone https://github.com/seu-usuario/sistema-gestao-faltas.git
-sudo chown -R $USER:$USER /var/www/sistema-gestao-faltas
-cd sistema-gestao-faltas
+sudo mkdir sistema-faltas
+sudo chown -R $USER:$USER /var/www/sistema-faltas
+git clone https://github.com/mma21947/supervisores.git /var/www/sistema-faltas
+cd /var/www/sistema-faltas
 ```
 
 ### Configurar Ambiente Virtual
 
 ```bash
-virtualenv env
+sudo apt install -y python3-venv
+python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
-pip install gunicorn psycopg2-binary
+pip install gunicorn
 ```
 
 ### Configurar Variáveis de Ambiente
@@ -71,121 +88,84 @@ pip install gunicorn psycopg2-binary
 Crie um arquivo `.env` na raiz do projeto:
 
 ```bash
-touch .env
+cp .env.example .env
 nano .env
 ```
 
-Adicione as seguintes variáveis:
+Edite o arquivo com as seguintes configurações:
 
 ```
 DEBUG=False
 SECRET_KEY=sua_chave_secreta_muito_segura
-ALLOWED_HOSTS=seu_dominio.com,www.seu_dominio.com,IP_DO_SERVIDOR
+ALLOWED_HOSTS=192.168.8.193
+
+DB_ENGINE=django.db.backends.postgresql_psycopg2
 DB_NAME=sistema_faltas
-DB_USER=sistema_faltas_user
-DB_PASSWORD=senha_segura
+DB_USER=postgres
+DB_PASSWORD=postgres
 DB_HOST=localhost
 DB_PORT=5432
+
+LANGUAGE_CODE=pt-br
+TIME_ZONE=America/Sao_Paulo
 ```
 
-### Configuração do Django para Produção
+### Usar Configuração de Produção
 
-Crie um arquivo para configurações locais:
+Copie o arquivo de configuração de produção:
 
 ```bash
-nano sistema_login/local_settings.py
-```
-
-Adicione o seguinte conteúdo:
-
-```python
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Carrega variáveis de ambiente do arquivo .env
-load_dotenv()
-
-# Configurações básicas
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-SECRET_KEY = os.getenv('SECRET_KEY')
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
-
-# Configuração do banco de dados PostgreSQL
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-    }
-}
-
-# Configuração de arquivos estáticos
-STATIC_ROOT = os.path.join(Path(__file__).resolve().parent.parent, 'staticfiles')
-STATIC_URL = '/static/'
-
-# Configuração de arquivos de mídia
-MEDIA_ROOT = os.path.join(Path(__file__).resolve().parent.parent, 'media')
-MEDIA_URL = '/media/'
-
-# Configurações de segurança
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_BROWSER_XSS_FILTER = True
+cp sistema_login/production_settings.py sistema_login/local_settings.py
 ```
 
 ### Migrar e Preparar o Banco de Dados
 
 ```bash
 python manage.py migrate
-python manage.py collectstatic
+python manage.py collectstatic --noinput
 python manage.py createsuperuser
 ```
 
 ## 4. Configuração do Gunicorn
 
-### Criar arquivo para serviço Gunicorn
+### Criar Arquivo de Serviço para o Systemd
 
 ```bash
-nano /etc/supervisor/conf.d/sistema-faltas.conf
+sudo nano /etc/systemd/system/sistema-faltas.service
 ```
 
 Adicione o seguinte conteúdo:
 
 ```ini
-[program:sistema-faltas]
-directory=/var/www/sistema-gestao-faltas
-command=/var/www/sistema-gestao-faltas/env/bin/gunicorn --workers 3 --bind unix:/var/www/sistema-gestao-faltas/sistema_faltas.sock sistema_login.wsgi:application
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/sistema-faltas/gunicorn.err.log
-stdout_logfile=/var/log/sistema-faltas/gunicorn.out.log
-user=www-data
-group=www-data
-environment=LANG=en_US.UTF-8,LC_ALL=en_US.UTF-8
+[Unit]
+Description=Sistema Faltas Gunicorn Daemon
+After=network.target
 
-[group:sistema-faltas]
-programs=sistema-faltas
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/sistema-faltas
+ExecStart=/var/www/sistema-faltas/env/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 sistema_login.wsgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-Crie o diretório para logs:
+### Configurar Permissões
 
 ```bash
-sudo mkdir -p /var/log/sistema-faltas
-sudo touch /var/log/sistema-faltas/gunicorn.err.log
-sudo touch /var/log/sistema-faltas/gunicorn.out.log
+sudo chown -R www-data:www-data /var/www/sistema-faltas
+sudo chmod -R 775 /var/www/sistema-faltas/media
+sudo chmod -R 775 /var/www/sistema-faltas/staticfiles
 ```
 
-### Iniciar o serviço
+### Iniciar e Habilitar o Serviço
 
 ```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start sistema-faltas:*
+sudo systemctl start sistema-faltas
+sudo systemctl enable sistema-faltas
+sudo systemctl status sistema-faltas
 ```
 
 ## 5. Configuração do Nginx
@@ -201,21 +181,24 @@ Adicione o seguinte conteúdo:
 ```nginx
 server {
     listen 80;
-    server_name seu_dominio.com www.seu_dominio.com;
+    server_name 192.168.8.193;
 
     location = /favicon.ico { access_log off; log_not_found off; }
     
     location /static/ {
-        root /var/www/sistema-gestao-faltas;
+        alias /var/www/sistema-faltas/staticfiles/;
     }
 
     location /media/ {
-        root /var/www/sistema-gestao-faltas;
+        alias /var/www/sistema-faltas/media/;
     }
 
     location / {
-        include proxy_params;
-        proxy_pass http://unix:/var/www/sistema-gestao-faltas/sistema_faltas.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://0.0.0.0:8000;
     }
 }
 ```
@@ -232,69 +215,77 @@ sudo systemctl restart nginx
 
 ```bash
 sudo ufw allow 'Nginx Full'
+sudo ufw allow OpenSSH
+sudo ufw enable
 ```
 
-## 6. Configuração SSL com Let's Encrypt (opcional, mas recomendado)
+## 6. Verificação e Solução de Problemas
 
-### Instalar o Certbot
+### Verificar Status dos Serviços
 
 ```bash
-sudo apt install certbot python3-certbot-nginx -y
+sudo systemctl status postgresql
+sudo systemctl status sistema-faltas
+sudo systemctl status nginx
 ```
 
-### Obter certificado SSL
-
-```bash
-sudo certbot --nginx -d seu_dominio.com -d www.seu_dominio.com
-```
-
-### Renovação automática
-
-O Certbot já configura a renovação automática. Verifique com:
-
-```bash
-sudo certbot renew --dry-run
-```
-
-## 7. Manutenção e Monitoramento
-
-### Verificar status do serviço
-
-```bash
-sudo supervisorctl status sistema-faltas
-```
-
-### Reiniciar o serviço após atualizações
-
-```bash
-cd /var/www/sistema-gestao-faltas
-git pull
-source env/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py collectstatic --noinput
-sudo supervisorctl restart sistema-faltas:*
-sudo systemctl restart nginx
-```
-
-### Acessar logs
+### Verificar Logs do Sistema
 
 ```bash
 # Logs do Gunicorn
-sudo tail -f /var/log/sistema-faltas/gunicorn.out.log
-sudo tail -f /var/log/sistema-faltas/gunicorn.err.log
+sudo journalctl -u sistema-faltas
 
 # Logs do Nginx
 sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
+
+# Logs do Django
+sudo tail -f /var/www/sistema-faltas/django_error.log
 ```
 
-## Resolução de Problemas
+### Problemas Comuns e Soluções
 
-Se encontrar problemas durante a implantação, verifique:
+#### Problema de Permissão
 
-1. Logs do Gunicorn e Nginx
-2. Permissões de arquivos e diretórios
-3. Status do serviço Supervisor
-4. Configurações de firewall
-5. Configurações do Django em local_settings.py 
+Se encontrar problemas de permissão:
+
+```bash
+sudo chown -R www-data:www-data /var/www/sistema-faltas
+sudo chmod -R 775 /var/www/sistema-faltas/media
+sudo chmod -R 775 /var/www/sistema-faltas/staticfiles
+```
+
+#### Problema com o PostgreSQL
+
+Se não conseguir conectar ao PostgreSQL:
+
+1. Verifique se o serviço está rodando:
+   ```bash
+   sudo systemctl status postgresql
+   ```
+
+2. Verifique a configuração de autenticação:
+   ```bash
+   sudo nano /etc/postgresql/[versao]/main/pg_hba.conf
+   ```
+
+3. Reinicie o PostgreSQL:
+   ```bash
+   sudo systemctl restart postgresql
+   ```
+
+#### Problema com o Gunicorn
+
+Se o Gunicorn não iniciar:
+
+1. Verifique os logs:
+   ```bash
+   sudo journalctl -u sistema-faltas
+   ```
+
+2. Verifique manualmente se o Gunicorn funciona:
+   ```bash
+   cd /var/www/sistema-faltas
+   source env/bin/activate
+   gunicorn --bind 0.0.0.0:8000 sistema_login.wsgi:application
+   ``` 
